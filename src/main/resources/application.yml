@@ -1,0 +1,32 @@
+---
+micronaut:
+  application:
+    name: rebalancing-erro-kafka-streams-micronaut
+  server:
+    port: ${SERVER_PORT:`8071`}
+
+---
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BROKERS:`localhost:9092`}
+
+  schema:
+    registry:
+      url: ${SCHEMA_REGISTRY_URL:`http://localhost:8081`}
+  offset:
+    reset: earliest
+  default:
+    value:
+      serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    key:
+      serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+  num:
+    stream:
+      threads: 30
+  commit:
+    interval:
+      ms: 1000
+  topology:
+    optimization: all
+  poll:
+    ms: 1000

@@ -1,0 +1,67 @@
+version: '3.2'
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.4.2
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
+  
+  kafka:
+    image: confluentinc/cp-kafka:5.4.2
+    hostname: kafka
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:19092
+      KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://:9092,LISTENER_DOCKER_EXTERNAL://:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      JMX_PORT: 9989
+      VIRTUAL_HOST: zeroglosa.local
+    depends_on:
+      - zookeeper
+
+  kafka-schema-registry:
+    image: confluentinc/cp-schema-registry:5.4.2
+    hostname: kafka-schema-registry
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "kafka:9092"
+      SCHEMA_REGISTRY_HOST_NAME: kafka-schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      VIRTUAL_HOST: zeroglosa.local
+    depends_on:
+      - zookeeper
+      - kafka
+
+  stream1:
+    image: rebalancing-erro-kafka-streams-micronaut:1.0
+    ports:
+      - "8070:8071"
+    environment:
+      KAFKA_BROKERS: "kafka:9092"
+      SCHEMA_REGISTRY_URL: http://kafka-schema-registry:8081
+    depends_on:
+      - zookeeper
+      - kafka
+      - kafka-schema-registry
+
+  stream2:
+    image: rebalancing-erro-kafka-streams-micronaut:1.0
+    ports:
+      - "8071:8071"
+    environment:
+      KAFKA_BROKERS: "kafka:9092"
+      SCHEMA_REGISTRY_URL: http://kafka-schema-registry:8081
+    depends_on:
+      - zookeeper
+      - kafka
+      - kafka-schema-registry

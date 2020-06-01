@@ -1,0 +1,83 @@
+plugins {
+    id "groovy"
+    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id "application"
+}
+
+
+
+version "1.0"
+group "rebalancing.erro.kafka.streams.micronaut"
+
+
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven { url "https://jcenter.bintray.com" }
+    maven { url 'https://packages.confluent.io/maven/' }
+}
+configurations {
+    // for dependencies that are needed for development only
+    developmentOnly 
+}
+
+dependencies {
+    compileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
+    compileOnly "io.micronaut:micronaut-inject-groovy"
+    implementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    implementation "io.micronaut:micronaut-http-client"
+    implementation "io.micronaut.configuration:micronaut-kafka"
+    implementation "io.micronaut:micronaut-http-server-netty"
+    implementation "io.micronaut:micronaut-runtime-groovy"
+    implementation "io.micronaut:micronaut-validation"
+    implementation "io.micronaut.kafka:micronaut-kafka:$micronautKafka"
+    implementation "io.micronaut.kafka:micronaut-kafka-streams:$micronautKafka"
+
+    compile('org.apache.kafka:kafka-streams:2.5.0')
+
+    compile('io.confluent:kafka-streams-avro-serde:5.4.2') {
+        exclude group: "org.apache.kafka", module: "kafka-clients"
+    }
+
+
+
+    runtimeOnly "ch.qos.logback:logback-classic:1.2.3"
+    testCompileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation("org.spockframework:spock-core") {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
+    testImplementation "io.micronaut:micronaut-inject-groovy"
+    testImplementation "io.micronaut.test:micronaut-test-spock"
+    testImplementation "io.micronaut.test:micronaut-test-junit5"
+
+    testCompile "org.testcontainers:kafka:1.14.2"
+}
+
+test.classpath += configurations.developmentOnly
+
+mainClassName = "rebalancing.erro.kafka.streams.micronaut.Application"
+
+shadowJar {
+    mergeServiceFiles()
+}
+
+tasks.withType(JavaExec) {
+    classpath += configurations.developmentOnly
+    jvmArgs('-noverify', '-XX:TieredStopAtLevel=1', '-Dcom.sun.management.jmxremote')
+}
+tasks.withType(GroovyCompile) {
+    groovyOptions.forkOptions.jvmArgs.add('-Dgroovy.parameters=true')
+}
+
+task dockerBuild {
+    group = 'Docker'
+    description = 'Gerar docker image.'
+    dependsOn shadowJar
+    doLast {
+        exec {
+            commandLine 'docker', 'build', "-t", "rebalancing-erro-kafka-streams-micronaut:$version", "."
+        }
+    }
+}

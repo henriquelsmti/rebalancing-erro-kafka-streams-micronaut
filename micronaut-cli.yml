@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: rebalancing.erro.kafka.streams.micronaut
+---
+testFramework: spock
+sourceLanguage: groovy
